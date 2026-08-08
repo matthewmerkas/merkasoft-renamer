@@ -17,7 +17,6 @@ class RegexProcessor(BaseProcessor):
         if not files:
             return []
 
-        # Fallback if keyword argument is passed as 'start_number'
         start_num = kwargs.get("start_number", start_num)
 
         input_paths_abs = {os.path.abspath(f) for f in files}
@@ -34,7 +33,6 @@ class RegexProcessor(BaseProcessor):
             if not search_pattern:
                 return stem
 
-            # Support {num} token substitution in replacement text
             current_num = start_num + file_idx
             actual_replace = replace_pattern.replace("{num}", str(current_num))
 
@@ -45,63 +43,66 @@ class RegexProcessor(BaseProcessor):
                     return stem
             return stem.replace(search_pattern, actual_replace) if not use_regex else stem
 
-        # Pass 1: Compute target names and count occurrences per directory
-        targets, target_counts = [], {}
+        # Pass 1: Group by directory and STEM (ignoring extension & case)
+        targets, stem_counts = [], {}
         for seq_idx, (orig_idx, path) in enumerate(sorted_files):
             dirname, basename = os.path.split(path)
             stem, ext = os.path.splitext(basename)
             new_stem = transform_stem(stem, seq_idx)
             raw_target = f"{new_stem}{ext}"
 
-            key = (dirname, raw_target)
-            target_counts[key] = target_counts.get(key, 0) + 1
-            targets.append((orig_idx, path, dirname, new_stem, ext, raw_target))
+            # Group key ignores extension and forces lowercase for case-insensitivity
+            stem_key = (dirname, new_stem.lower())
+            stem_counts[stem_key] = stem_counts.get(stem_key, 0) + 1
+            targets.append((orig_idx, path, dirname, new_stem, ext, raw_target, stem_key))
 
-        # Pass 2: Resolve final filenames
+        # Pass 2: Resolve final filenames across the shared stem group
         planned = [None] * len(files)
         dir_seen = {}
+        dir_counters = {}
 
-        for orig_idx, path, dirname, stem, ext, raw_target in targets:
+        for orig_idx, path, dirname, stem, ext, raw_target, stem_key in targets:
             seen = dir_seen.setdefault(dirname, set())
             raw_abs = os.path.abspath(os.path.join(dirname, raw_target))
 
             disk_collision = os.path.exists(raw_abs) and raw_abs not in input_paths_abs
 
-            # Always force suffix resolution for "replace_space" / "replace"
+            # Check for stem-level conflict across all extensions
             has_conflict = (
                     strategy_key in ("replace_space", "replace")
-                    or target_counts[(dirname, raw_target)] > 1
+                    or stem_counts[stem_key] > 1
                     or disk_collision
-                    or raw_target in seen
+                    or raw_target.lower() in seen
             )
 
             if has_conflict:
-                counter = start_num
-                num_conflicts = target_counts.get((dirname, raw_target), 1)
+                # Retrieve the next counter position for this stem group
+                counter = dir_counters.get(stem_key, start_num)
+                num_conflicts = stem_counts.get(stem_key, 1)
 
-                # Calculate pad width based on starting number + total conflicts
                 max_counter = start_num + num_conflicts - 1
                 pad_width = max(1, len(str(max_counter)))
 
                 while True:
-                    # Dynamically scale width if counter exceeds initial pad_width
                     current_pad = max(pad_width, len(str(counter)))
 
                     if strategy_key == "replace_underscore":
                         suffix = f"_{counter:0{current_pad}d}"
                     else:
-                        # Default ("replace_space" / "replace")
                         suffix = f"{counter:0{max(3, current_pad)}d} 01"
 
                     candidate = f"{stem}{suffix}{ext}"
                     cand_abs = os.path.abspath(os.path.join(dirname, candidate))
-                    if candidate not in seen and not (os.path.exists(cand_abs) and cand_abs not in input_paths_abs):
+
+                    if candidate.lower() not in seen and not (
+                            os.path.exists(cand_abs) and cand_abs not in input_paths_abs):
+                        dir_counters[stem_key] = counter + 1
                         break
                     counter += 1
             else:
                 candidate = raw_target
 
-            seen.add(candidate)
+            seen.add(candidate.lower())
 
             input_preview = self.format_parent_path(path)
             output_preview = self.format_parent_path(dirname, candidate)

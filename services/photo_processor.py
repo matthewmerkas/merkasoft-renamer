@@ -69,7 +69,8 @@ def extract_datetime(file_path: str, utc_offset_str: str = "+10:00") -> datetime
 def format_new_basename(dt: datetime, strategy_key: str, counters: dict, global_counter: int, start_num: int) -> tuple[str, int]:
     if strategy_key == "sequential":
         year_str = dt.strftime("%Y")
-        new_name = f"{year_str} {global_counter:04d} 01"
+        pad_width = max(4, len(str(global_counter)))
+        new_name = f"{year_str} {global_counter:0{pad_width}d} 01"
         return new_name, global_counter + 1
     else:
         date_formatted = dt.strftime("%Y %m %b %d")
@@ -77,7 +78,8 @@ def format_new_basename(dt: datetime, strategy_key: str, counters: dict, global_
             counters[date_formatted] = start_num
         day_counter = counters[date_formatted]
         counters[date_formatted] += 1
-        new_name = f"{date_formatted} {day_counter:03d} 01"
+        pad_width = max(3, len(str(day_counter)))
+        new_name = f"{date_formatted} {day_counter:0{pad_width}d} 01"
         return new_name, global_counter
 
 
@@ -88,6 +90,9 @@ class PhotoProcessor(BaseProcessor):
         if not files:
             return []
 
+        start_num = kwargs.get("start_number", start_num)
+        input_paths_abs = {os.path.abspath(f) for f in files}
+
         item_metas = []
         for idx, path in enumerate(files):
             dt = extract_datetime(path, utc_offset_str)
@@ -97,19 +102,22 @@ class PhotoProcessor(BaseProcessor):
 
         counters = {}
         global_counter = start_num
-        last_base = ""
+        last_base_lower = ""
         planned_items = []
+        dir_seen = {}
 
         for item in item_metas:
             path = item["path"]
             dt = item["dt"]
             dirname, filename = os.path.split(path)
             base, ext = os.path.splitext(filename)
+            base_lower = base.lower()
             ext_lower = ext.lower()
 
             input_preview = self.format_parent_path(dirname, filename)
 
-            if ext_lower == ".mov" and last_base and base == last_base:
+            # Case-insensitive Live Photo (.mov) pairing check
+            if ext_lower == ".mov" and last_base_lower and base_lower == last_base_lower:
                 planned_items.append({
                     "original_index": item["original_index"],
                     "original_path": path,
@@ -122,16 +130,38 @@ class PhotoProcessor(BaseProcessor):
                 })
                 continue
 
-            last_base = base
+            last_base_lower = base_lower
             new_base_name, global_counter = format_new_basename(dt, strategy_key, counters, global_counter, start_num)
 
             if ext_lower in [".heic", ".heif"]:
-                target_name = f"{new_base_name}.jpg"
+                target_ext = ".jpg"
                 action = "convert"
             else:
-                ext_out = ".jpg" if ext_lower == ".jpeg" else ext
-                target_name = f"{new_base_name}{ext_out}"
+                target_ext = ".jpg" if ext_lower == ".jpeg" else ext
                 action = "rename"
+
+            seen = dir_seen.setdefault(dirname, set())
+            candidate_base = new_base_name
+
+            # Collision & disk existence resolution
+            counter_sub = 1
+            while True:
+                candidate = f"{candidate_base}{target_ext}"
+                cand_abs = os.path.abspath(os.path.join(dirname, candidate))
+                disk_collision = os.path.exists(cand_abs) and cand_abs not in input_paths_abs
+
+                if candidate.lower() not in seen and not disk_collision:
+                    break
+
+                counter_sub += 1
+                if candidate_base.endswith(" 01"):
+                    stem_prefix = candidate_base[:-3]
+                    candidate_base = f"{stem_prefix} {counter_sub:02d}"
+                else:
+                    candidate_base = f"{new_base_name}_{counter_sub}"
+
+            target_name = f"{candidate_base}{target_ext}"
+            seen.add(target_name.lower())
 
             output_preview = self.format_parent_path(dirname, target_name)
 
