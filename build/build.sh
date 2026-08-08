@@ -17,14 +17,12 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 ensure_venv() {
-    # Use isolated temp venv if running inside Docker to prevent host/container cross-architecture conflicts
     if [ -f /.dockerenv ]; then
         VENV_DIR="/tmp/docker_build_venv"
     else
         VENV_DIR="$PROJECT_ROOT/venv"
     fi
 
-    # 1. Create venv if missing
     if [ ! -d "$VENV_DIR" ]; then
         echo -e "${BLUE}=== Creating Virtual Environment at ${VENV_DIR} ===${NC}"
         if command -v python3 >/dev/null 2>&1; then
@@ -37,7 +35,6 @@ ensure_venv() {
         fi
     fi
 
-    # 2. Identify venv binaries
     if [ -f "$VENV_DIR/bin/python" ]; then
         VENV_PYTHON="$VENV_DIR/bin/python"
         VENV_PIP="$VENV_DIR/bin/pip"
@@ -51,13 +48,17 @@ ensure_venv() {
         return 1
     fi
 
-    # 3. Install/sync requirements inside venv
     echo -e "${BLUE}=== Syncing environment dependencies ===${NC}"
     "$VENV_PYTHON" -m pip install --quiet --upgrade pip
 
     if [ -f "requirements.txt" ]; then
         echo "Installing dependencies from requirements.txt..."
         "$VENV_PIP" install --quiet -r requirements.txt
+    fi
+
+    if [ ! -f "$PYINSTALLER_BIN" ]; then
+        echo "Installing PyInstaller..."
+        "$VENV_PIP" install --quiet pyinstaller
     fi
 }
 
@@ -71,6 +72,28 @@ run_pyinstaller() {
     echo -e "${BLUE}=== Running PyInstaller ($BUNDLE_TYPE) ===${NC}"
     mkdir -p "$DIST_DIR" "$WORK_DIR" "build/pyinstaller"
 
+    # Build PyInstaller flags
+    EXTRA_FLAGS=()
+
+    # Locate Icon
+    if [ -f "assets/icon.ico" ]; then
+        EXTRA_FLAGS+=("--icon=assets/icon.ico")
+    elif [ -f "assets/icon.png" ]; then
+        EXTRA_FLAGS+=("--icon=assets/icon.png")
+    fi
+
+    # Determine platform path separator for --add-data
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        SEP=";"
+    else
+        SEP=":"
+    fi
+
+    # Include assets directory if present
+    if [ -d "assets" ]; then
+        EXTRA_FLAGS+=("--add-data=assets${SEP}assets")
+    fi
+
     if [ -f "$SPEC_PATH" ]; then
         echo "Using existing spec file: $SPEC_PATH"
         "$PYINSTALLER_BIN" --noconfirm --clean \
@@ -80,6 +103,7 @@ run_pyinstaller() {
     else
         echo "Spec file not found. Building from main.py..."
         "$PYINSTALLER_BIN" --noconfirm --clean $BUNDLE_TYPE --windowed \
+            "${EXTRA_FLAGS[@]}" \
             --name "$APP_NAME" \
             --specpath "build/pyinstaller" \
             --distpath "$DIST_DIR" \
@@ -116,7 +140,6 @@ build_linux() {
     echo -e "${GREEN}   Building Linux Target (AppImage)     ${NC}"
     echo -e "${GREEN}========================================${NC}"
 
-    # Handle building Linux target from macOS via Docker
     if [[ "$OSTYPE" != "linux"* ]]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
             echo -e "${BLUE}macOS host detected. Checking for Docker...${NC}"
@@ -148,10 +171,9 @@ build_linux() {
         fi
     fi
 
-    # Native Linux Build Steps
     run_pyinstaller "--onedir"
 
-    APPDIR="build/appimage/MerkasoftRenamer.AppDir"
+    APPDIR="build/dist/MerkasoftRenamer.AppDir"
     TOOL_DIR="build/appimage"
     TOOL_PATH="${TOOL_DIR}/appimagetool-x86_64.AppImage"
     EXTRACTED_TOOL="${TOOL_DIR}/squashfs-root/AppRun"
@@ -181,7 +203,6 @@ EOF
         cp assets/icon.png "$APPDIR/app.png"
     fi
 
-    # Download and extract appimagetool
     if [ ! -f "$EXTRACTED_TOOL" ]; then
         echo -e "${BLUE}=== Downloading appimagetool ===${NC}"
         mkdir -p "$TOOL_DIR"
