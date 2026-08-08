@@ -1,0 +1,4 @@
+module Renamer
+Main 254.0 Main.qml
+singleton Theme 1.0 Theme.qml
+FileItemDelegate 1.0 components/FileItemDelegate.qml
