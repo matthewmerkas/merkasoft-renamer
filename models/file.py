@@ -65,7 +65,7 @@ class FileModel(QObject):
         self._start_num = 1
         self._jpeg_quality = 90
 
-        self._search_pattern = " \\d{3} \\d{2}$"
+        self._search_pattern = "\\d{3} \\d{2}$"
         self._replace_pattern = ""
         self._use_regex = True
 

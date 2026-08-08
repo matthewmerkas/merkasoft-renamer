@@ -81,7 +81,7 @@ class RegexProcessor(BaseProcessor):
                         suffix = f"_{counter:0{current_pad}d}"
                     else:
                         # Default ("replace_space" / "replace"): Always appends "001 01" format
-                        suffix = f" {counter:03d} 01"
+                        suffix = f"{counter:03d} 01"
 
                     candidate = f"{stem}{suffix}{ext}"
                     cand_abs = os.path.abspath(os.path.join(dirname, candidate))
