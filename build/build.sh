@@ -73,32 +73,38 @@ run_pyinstaller() {
     echo -e "${BLUE}=== Running PyInstaller ($BUNDLE_TYPE for $TARGET_OS) ===${NC}"
     mkdir -p "$DIST_DIR" "$WORK_DIR" "build/pyinstaller"
 
-    EXTRA_FLAGS=()
-
-    # Locate Icon using project root
-    if [ -f "$PROJECT_ROOT/assets/icon.icns" ]; then
-        EXTRA_FLAGS+=("--icon=$PROJECT_ROOT/assets/icon.icns")
-    elif [ -f "$PROJECT_ROOT/assets/icon.ico" ]; then
-        EXTRA_FLAGS+=("--icon=$PROJECT_ROOT/assets/icon.ico")
-    elif [ -f "$PROJECT_ROOT/assets/icon.png" ]; then
-        EXTRA_FLAGS+=("--icon=$PROJECT_ROOT/assets/icon.png")
-    fi
-
-    # Determine platform path separator for --add-data
-    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Determine platform path separator and native project root path
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
         SEP=";"
+        if command -v cygpath >/dev/null 2>&1; then
+            NATIVE_ROOT="$(cygpath -w "$PROJECT_ROOT")"
+        else
+            NATIVE_ROOT="$PROJECT_ROOT"
+        fi
     else
         SEP=":"
+        NATIVE_ROOT="$PROJECT_ROOT"
     fi
 
-    # Include assets directory using absolute path relative to project root
+    EXTRA_FLAGS=()
+
+    # Locate Icon using native paths
+    if [ -f "$PROJECT_ROOT/assets/icon.icns" ]; then
+        EXTRA_FLAGS+=("--icon=$NATIVE_ROOT/assets/icon.icns")
+    elif [ -f "$PROJECT_ROOT/assets/icon.ico" ]; then
+        EXTRA_FLAGS+=("--icon=$NATIVE_ROOT/assets/icon.ico")
+    elif [ -f "$PROJECT_ROOT/assets/icon.png" ]; then
+        EXTRA_FLAGS+=("--icon=$NATIVE_ROOT/assets/icon.png")
+    fi
+
+    # Include assets directory
     if [ -d "$PROJECT_ROOT/assets" ]; then
-        EXTRA_FLAGS+=("--add-data=$PROJECT_ROOT/assets${SEP}assets")
+        EXTRA_FLAGS+=("--add-data=$NATIVE_ROOT/assets${SEP}assets")
     fi
 
     # Include QML/Python module directory if present
     if [ -d "$PROJECT_ROOT/Renamer" ]; then
-        EXTRA_FLAGS+=("--add-data=$PROJECT_ROOT/Renamer${SEP}Renamer")
+        EXTRA_FLAGS+=("--add-data=$NATIVE_ROOT/Renamer${SEP}Renamer")
         if [ -f "$PROJECT_ROOT/Renamer/__init__.py" ]; then
             EXTRA_FLAGS+=("--collect-all=Renamer")
         fi
@@ -106,13 +112,13 @@ run_pyinstaller() {
 
     if [ -f "$SPEC_PATH" ]; then
         echo "Using existing spec file: $SPEC_PATH"
-        "$PYINSTALLER_BIN" --noconfirm --clean \
+        MSYS_NO_PATHCONV=1 "$PYINSTALLER_BIN" --noconfirm --clean \
             --distpath "$DIST_DIR" \
             --workpath "$WORK_DIR" \
             "$SPEC_PATH"
     else
         echo "Spec file not found. Building from main.py..."
-        "$PYINSTALLER_BIN" --noconfirm --clean $BUNDLE_TYPE --windowed \
+        MSYS_NO_PATHCONV=1 "$PYINSTALLER_BIN" --noconfirm --clean $BUNDLE_TYPE --windowed \
             "${EXTRA_FLAGS[@]}" \
             --name "$APP_NAME" \
             --specpath "build/pyinstaller" \
