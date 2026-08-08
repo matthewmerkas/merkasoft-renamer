@@ -74,7 +74,7 @@ Window {
                     }
 
                     Button {
-                        text: "✕ Clear All"
+                        text: "✕ Remove All"
                         enabled: fileModel.files.length > 0
                         onClicked: fileModel.clearFiles()
                     }
