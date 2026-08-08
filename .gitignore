@@ -232,4 +232,5 @@ compile_commands.json
 
 # Ignore build artefacts
 /build/dist/
+/build/pyinstaller/
 /build/work/

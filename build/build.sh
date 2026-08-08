@@ -64,17 +64,18 @@ ensure_venv() {
 
 run_pyinstaller() {
     local BUNDLE_TYPE="${1:---onedir}"
-    local SPEC_NAME="${APP_NAME// /_}_${BUNDLE_TYPE//-/_}.spec"
+    local TARGET_OS="${2:-native}"
+    local SPEC_NAME="${APP_NAME// /_}_${TARGET_OS}_${BUNDLE_TYPE//-/_}.spec"
     local SPEC_PATH="build/pyinstaller/$SPEC_NAME"
 
     ensure_venv
 
-    echo -e "${BLUE}=== Running PyInstaller ($BUNDLE_TYPE) ===${NC}"
+    echo -e "${BLUE}=== Running PyInstaller ($BUNDLE_TYPE for $TARGET_OS) ===${NC}"
     mkdir -p "$DIST_DIR" "$WORK_DIR" "build/pyinstaller"
 
     EXTRA_FLAGS=()
 
-    # Locate Icon using absolute path
+    # Locate Icon using project root
     if [ -f "$PROJECT_ROOT/assets/icon.icns" ]; then
         EXTRA_FLAGS+=("--icon=$PROJECT_ROOT/assets/icon.icns")
     elif [ -f "$PROJECT_ROOT/assets/icon.ico" ]; then
@@ -90,12 +91,12 @@ run_pyinstaller() {
         SEP=":"
     fi
 
-    # Include assets directory using absolute project paths
+    # Include assets directory using absolute path relative to project root
     if [ -d "$PROJECT_ROOT/assets" ]; then
         EXTRA_FLAGS+=("--add-data=$PROJECT_ROOT/assets${SEP}assets")
     fi
 
-    # Include QML module directory if present
+    # Include QML/Python module directory if present
     if [ -d "$PROJECT_ROOT/Renamer" ]; then
         EXTRA_FLAGS+=("--add-data=$PROJECT_ROOT/Renamer${SEP}Renamer")
         if [ -f "$PROJECT_ROOT/Renamer/__init__.py" ]; then
@@ -135,7 +136,7 @@ build_macos() {
         return 1
     fi
 
-    run_pyinstaller "--onedir"
+    run_pyinstaller "--onedir" "macos"
 
     if [ -d "${DIST_DIR}/${APP_NAME}.app" ]; then
         echo -e "${GREEN}Success! Bundle created at: ${DIST_DIR}/${APP_NAME}.app${NC}"
@@ -159,7 +160,7 @@ build_linux() {
                     --platform linux/amd64 \
                     -v "$PROJECT_ROOT:/app" \
                     -w /app \
-                    python:3.11-slim \
+                    python:3.14-slim \
                     bash -c "
                         set -e
                         echo '=== Installing Linux C-dependencies ==='
@@ -180,7 +181,7 @@ build_linux() {
         fi
     fi
 
-    run_pyinstaller "--onedir"
+    run_pyinstaller "--onedir" "linux"
 
     APPDIR="build/dist/MerkasoftRenamer.AppDir"
     TOOL_DIR="build/appimage"
@@ -259,7 +260,7 @@ build_windows() {
         return 1
     fi
 
-    run_pyinstaller "--onefile"
+    run_pyinstaller "--onefile" "windows"
 
     if [ -f "${DIST_DIR}/${APP_NAME}.exe" ]; then
         echo -e "${GREEN}Success! Executable created at: ${DIST_DIR}/${APP_NAME}.exe${NC}"
