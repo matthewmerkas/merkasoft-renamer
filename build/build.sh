@@ -73,7 +73,7 @@ build_linux() {
                     --platform linux/amd64 \
                     -v "$PROJECT_ROOT:/app" \
                     -w /app \
-                    python:3.11-slim \
+                    python:3.14-slim \
                     bash -c "
                         set -e
                         echo '=== Installing Linux C-dependencies ==='
