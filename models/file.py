@@ -120,6 +120,13 @@ class FileModel(QObject):
     selectedIndices = Property("QVariantList", getSelectedIndices, notify=selectedIndicesChanged)
     strategies = Property("QVariantList", getStrategies, constant=True)
 
+    def _reset_progress(self):
+        """Resets progress bar and status message to default state."""
+        self._progress_value = 0.0
+        self._status_message = ""
+        self.progressValueChanged.emit()
+        self.statusMessageChanged.emit()
+
     def _update_previews(self):
         """Generates new preview names via backend dispatcher."""
         files = self._raw_input_paths
@@ -145,6 +152,7 @@ class FileModel(QObject):
     @Slot(str)
     def addFile(self, url):
         self.addFiles([url])
+        self._reset_progress()
 
     @Slot(list)
     @Slot(str)
@@ -222,6 +230,9 @@ class FileModel(QObject):
         # 4. Refresh output preview list
         self._update_previews()
 
+        # 5. Clear progress bar and status message
+        self._reset_progress()
+
         self.filesChanged.emit()
         self.selectedIndicesChanged.emit()
 
@@ -233,6 +244,10 @@ class FileModel(QObject):
         self._selected_indices.clear()
         self._anchor_index = -1
         self._input_model.set_selected_indices(self._selected_indices)
+
+        # Reset progress and status on clear
+        self._reset_progress()
+
         self.filesChanged.emit()
         self.selectedIndicesChanged.emit()
         self.previewFilesChanged.emit()
