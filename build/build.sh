@@ -72,26 +72,35 @@ run_pyinstaller() {
     echo -e "${BLUE}=== Running PyInstaller ($BUNDLE_TYPE) ===${NC}"
     mkdir -p "$DIST_DIR" "$WORK_DIR" "build/pyinstaller"
 
-    # Build PyInstaller flags
     EXTRA_FLAGS=()
 
-    # Locate Icon
-    if [ -f "assets/icon.ico" ]; then
-        EXTRA_FLAGS+=("--icon=assets/icon.ico")
-    elif [ -f "assets/icon.png" ]; then
-        EXTRA_FLAGS+=("--icon=assets/icon.png")
+    # Locate Icon using absolute path
+    if [ -f "$PROJECT_ROOT/assets/icon.icns" ]; then
+        EXTRA_FLAGS+=("--icon=$PROJECT_ROOT/assets/icon.icns")
+    elif [ -f "$PROJECT_ROOT/assets/icon.ico" ]; then
+        EXTRA_FLAGS+=("--icon=$PROJECT_ROOT/assets/icon.ico")
+    elif [ -f "$PROJECT_ROOT/assets/icon.png" ]; then
+        EXTRA_FLAGS+=("--icon=$PROJECT_ROOT/assets/icon.png")
     fi
 
     # Determine platform path separator for --add-data
-    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
         SEP=";"
     else
         SEP=":"
     fi
 
-    # Include assets directory if present
-    if [ -d "assets" ]; then
-        EXTRA_FLAGS+=("--add-data=assets${SEP}assets")
+    # Include assets directory using absolute project paths
+    if [ -d "$PROJECT_ROOT/assets" ]; then
+        EXTRA_FLAGS+=("--add-data=$PROJECT_ROOT/assets${SEP}assets")
+    fi
+
+    # Include QML module directory if present
+    if [ -d "$PROJECT_ROOT/Renamer" ]; then
+        EXTRA_FLAGS+=("--add-data=$PROJECT_ROOT/Renamer${SEP}Renamer")
+        if [ -f "$PROJECT_ROOT/Renamer/__init__.py" ]; then
+            EXTRA_FLAGS+=("--collect-all=Renamer")
+        fi
     fi
 
     if [ -f "$SPEC_PATH" ]; then
@@ -199,8 +208,8 @@ Type=Application
 Categories=Utility;
 EOF
 
-    if [ -f "assets/icon.png" ]; then
-        cp assets/icon.png "$APPDIR/app.png"
+    if [ -f "$PROJECT_ROOT/assets/icon.png" ]; then
+        cp "$PROJECT_ROOT/assets/icon.png" "$APPDIR/app.png"
     fi
 
     if [ ! -f "$EXTRACTED_TOOL" ]; then
