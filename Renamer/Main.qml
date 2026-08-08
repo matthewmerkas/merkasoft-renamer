@@ -10,7 +10,7 @@ Window {
     minimumWidth: 800
     minimumHeight: 600
     visible: true
-    title: "Merkasoft Renamer"
+    title: "Merkasoft Renamer v1.0.0"
     color: Theme.defaultBackground
 
     FileDialog {
