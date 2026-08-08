@@ -14,7 +14,6 @@ Vibe coded with Gemini 3.6 Flash Extended
 ```shell
 python -m venv venv
 source venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements
+python -m pip install -r requirements.txt
 python main.py
 ```
