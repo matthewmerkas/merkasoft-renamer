@@ -11,7 +11,7 @@ Window {
     minimumHeight: 600
     visible: true
     visibility: Window.Maximized
-    title: "Merkasoft Renamer v1.0.0"
+    title: "Merkasoft Renamer v1.1.0"
     color: Theme.defaultBackground
 
     FileDialog {
