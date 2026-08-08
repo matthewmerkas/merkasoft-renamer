@@ -10,6 +10,7 @@ Window {
     minimumWidth: 800
     minimumHeight: 600
     visible: true
+    visibility: Window.Maximized
     title: "Merkasoft Renamer v1.0.0"
     color: Theme.defaultBackground
 
@@ -345,7 +346,7 @@ Window {
                                 text: "UTC"
                                 color: Theme.defaultFont
                                 font.pixelSize: 12
-                                leftPadding: 5
+                                leftPadding: 6
                             }
 
                             TextField {
@@ -378,7 +379,7 @@ Window {
                                 text: "UTC"
                                 color: Theme.defaultFont
                                 font.pixelSize: 12
-                                leftPadding: 5
+                                leftPadding: 6
                             }
 
                             TextField {
@@ -399,10 +400,18 @@ Window {
                             property string strategyId: "replace"
                             spacing: 6
 
+                            SpinBox {
+                                from: 1
+                                to: 9999
+                                value: 1
+                                editable: true
+                                onValueChanged: fileModel.setStartNumber(value)
+                            }
+
                             TextField {
                                 id: searchField
                                 placeholderText: "Find"
-                                Layout.preferredWidth: 125
+                                Layout.fillWidth: true
                                 selectByMouse: true
                                 text: fileModel.searchPattern
                                 onTextChanged: fileModel.setSearchPattern(text)
@@ -411,7 +420,7 @@ Window {
                             TextField {
                                 id: replaceField
                                 placeholderText: "Replace"
-                                Layout.preferredWidth: 125
+                                Layout.fillWidth: true
                                 selectByMouse: true
                                 text: fileModel.replacePattern
                                 onTextChanged: fileModel.setReplacePattern(text)
