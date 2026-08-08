@@ -101,10 +101,36 @@ Window {
                         id: dropArea
                         anchors.fill: parent
 
-                        onEntered: (drag) => drag.acceptProposedAction()
-                        onPositionChanged: (drag) => drag.acceptProposedAction()
+                        property int pendingFileCount: 0
+
+                        function updatePendingCount(drag) {
+                            if (drag.urls && drag.urls.length > 0) {
+                                pendingFileCount = drag.urls.length
+                            } else if (drag.hasText && drag.formats.includes("text/uri-list")) {
+                                let rawUriList = drag.getDataAsString("text/uri-list")
+                                let lines = rawUriList.split("\n").filter(l => l.trim().length > 0 && !l.startsWith("#"))
+                                pendingFileCount = lines.length
+                            } else {
+                                pendingFileCount = 0
+                            }
+                        }
+
+                        onEntered: (drag) => {
+                            drag.acceptProposedAction()
+                            updatePendingCount(drag)
+                        }
+
+                        onPositionChanged: (drag) => {
+                            drag.acceptProposedAction()
+                            updatePendingCount(drag)
+                        }
+
+                        onExited: {
+                            pendingFileCount = 0
+                        }
 
                         onDropped: (drop) => {
+                            pendingFileCount = 0
                             drop.acceptProposedAction()
                             if (drop.hasText && drop.formats.includes("text/uri-list")) {
                                 let rawUriList = drop.getDataAsString("text/uri-list")
@@ -243,22 +269,40 @@ Window {
                                     anchors.centerIn: parent
                                     spacing: 4
 
+                                    // Displayed while dragging files over the area
                                     Text {
                                         Layout.alignment: Qt.AlignHCenter
+                                        visible: dropArea.containsDrag
+                                        text: {
+                                            let count = dropArea.pendingFileCount
+                                            if (count > 0) {
+                                                return "Adding " + count + (count === 1 ? " file..." : " files...")
+                                            }
+                                            return "Adding files..."
+                                        }
+                                        font.bold: true
+                                        font.pixelSize: 16
+                                        color: Theme.defaultFont
+                                    }
+
+                                    // Standard prompt (hidden during drag)
+                                    Text {
+                                        Layout.alignment: Qt.AlignHCenter
+                                        visible: !dropArea.containsDrag
                                         text: fileList.count === 0
                                               ? "+ Drag & Drop files here"
                                               : "+ Drag & Drop or click to add more"
                                         font.pixelSize: 13
                                         font.bold: fileList.count === 0
-                                        color: dropArea.containsDrag ? "transparent" : Theme.boldFont
+                                        color: Theme.boldFont
                                     }
 
                                     Text {
                                         Layout.alignment: Qt.AlignHCenter
-                                        visible: fileList.count === 0
+                                        visible: !dropArea.containsDrag && fileList.count === 0
                                         text: "or click anywhere to browse"
                                         font.pixelSize: 11
-                                        color: dropArea.containsDrag ? "transparent" : Theme.defaultFont
+                                        color: Theme.defaultFont
                                     }
                                 }
                             }
