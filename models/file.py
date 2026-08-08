@@ -8,6 +8,7 @@ from PySide6.QtCore import (
     Property,
     QThreadPool,
 )
+from PySide6.QtGui import QGuiApplication
 
 from backend import generate_previews
 from models.file_list import FileListModel
@@ -172,6 +173,30 @@ class FileModel(QObject):
             self._input_model.add_items(formatted_inputs)
             self._output_model.add_items(new_previews)
             self.filesChanged.emit()
+
+    @Slot()
+    def pasteFromClipboard(self):
+        clipboard = QGuiApplication.clipboard()
+        mime_data = clipboard.mimeData()
+        files_to_add = []
+
+        # 1. Check for actual file objects (e.g., copied from Finder or Windows Explorer)
+        if mime_data.hasUrls():
+            for url in mime_data.urls():
+                local_path = url.toLocalFile()
+                if local_path and os.path.exists(local_path):
+                    files_to_add.append(local_path)
+
+        # 2. Fallback: Check for raw text paths (e.g., copied paths from terminal/text editor)
+        elif mime_data.hasText():
+            text = mime_data.text().strip()
+            for line in text.splitlines():
+                clean_path = line.strip().strip('"\'')
+                if clean_path and os.path.exists(clean_path):
+                    files_to_add.append(clean_path)
+
+        if files_to_add:
+            self.addFiles(files_to_add)
 
     @Slot()
     def deleteSelected(self):

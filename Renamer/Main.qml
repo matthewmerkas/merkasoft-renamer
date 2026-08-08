@@ -33,6 +33,11 @@ Window {
         onActivated: fileModel.selectAll()
     }
 
+    Shortcut {
+        sequence: StandardKey.Paste
+        onActivated: fileModel.pasteFromClipboard()
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12
