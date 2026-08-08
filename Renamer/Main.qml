@@ -38,6 +38,11 @@ Window {
         onActivated: fileModel.pasteFromClipboard()
     }
 
+    Shortcut {
+        sequences: [StandardKey.Deselect, "Escape", "Ctrl+Shift+A"]
+        onActivated: fileModel.deselectAll()
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12

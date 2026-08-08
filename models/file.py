@@ -302,6 +302,13 @@ class FileModel(QObject):
         self.selectedIndicesChanged.emit()
 
     @Slot()
+    def deselectAll(self):
+        if self._selected_indices:
+            self._selected_indices = set()
+            self._input_model.set_selected_indices(self._selected_indices)
+            self.selectedIndicesChanged.emit()
+
+    @Slot()
     def selectAll(self):
         total_count = len(self._raw_input_paths)
         if total_count > 0:
