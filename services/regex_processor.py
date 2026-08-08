@@ -12,9 +12,13 @@ class RegexProcessor(BaseProcessor):
 
     def generate_previews(self, files: list[str], search_pattern: str = "",
                           replace_pattern: str = "", use_regex: bool = False,
-                          strategy_key: str = "replace_space", **kwargs) -> list[dict]:
+                          strategy_key: str = "replace_space", start_num: int = 1,
+                          **kwargs) -> list[dict]:
         if not files:
             return []
+
+        # Fallback if keyword argument is passed as 'start_number'
+        start_num = kwargs.get("start_number", start_num)
 
         input_paths_abs = {os.path.abspath(f) for f in files}
         sorted_files = sorted(enumerate(files), key=lambda x: natural_sort_key(x[1]))
@@ -26,22 +30,27 @@ class RegexProcessor(BaseProcessor):
             except re.error:
                 pass
 
-        def transform_stem(stem: str) -> str:
+        def transform_stem(stem: str, file_idx: int) -> str:
             if not search_pattern:
                 return stem
+
+            # Support {num} token substitution in replacement text
+            current_num = start_num + file_idx
+            actual_replace = replace_pattern.replace("{num}", str(current_num))
+
             if use_regex and compiled_regex:
                 try:
-                    return compiled_regex.sub(replace_pattern, stem)
+                    return compiled_regex.sub(actual_replace, stem)
                 except Exception:
                     return stem
-            return stem.replace(search_pattern, replace_pattern) if not use_regex else stem
+            return stem.replace(search_pattern, actual_replace) if not use_regex else stem
 
         # Pass 1: Compute target names and count occurrences per directory
         targets, target_counts = [], {}
-        for orig_idx, path in sorted_files:
+        for seq_idx, (orig_idx, path) in enumerate(sorted_files):
             dirname, basename = os.path.split(path)
             stem, ext = os.path.splitext(basename)
-            new_stem = transform_stem(stem)
+            new_stem = transform_stem(stem, seq_idx)
             raw_target = f"{new_stem}{ext}"
 
             key = (dirname, raw_target)
@@ -67,11 +76,12 @@ class RegexProcessor(BaseProcessor):
             )
 
             if has_conflict:
-                counter = 1
+                counter = start_num
                 num_conflicts = target_counts.get((dirname, raw_target), 1)
 
-                # Pad width directly matches the digit count of total conflicts in this group
-                pad_width = max(1, len(str(num_conflicts)))
+                # Calculate pad width based on starting number + total conflicts
+                max_counter = start_num + num_conflicts - 1
+                pad_width = max(1, len(str(max_counter)))
 
                 while True:
                     # Dynamically scale width if counter exceeds initial pad_width
@@ -80,8 +90,8 @@ class RegexProcessor(BaseProcessor):
                     if strategy_key == "replace_underscore":
                         suffix = f"_{counter:0{current_pad}d}"
                     else:
-                        # Default ("replace_space" / "replace"): Always appends "001 01" format
-                        suffix = f"{counter:03d} 01"
+                        # Default ("replace_space" / "replace")
+                        suffix = f"{counter:0{max(3, current_pad)}d} 01"
 
                     candidate = f"{stem}{suffix}{ext}"
                     cand_abs = os.path.abspath(os.path.join(dirname, candidate))
