@@ -67,15 +67,10 @@ class RegexProcessor(BaseProcessor):
 
             disk_collision = os.path.exists(raw_abs) and raw_abs not in input_paths_abs
 
-            # Check for stem-level conflict across all extensions
-            has_conflict = (
-                    strategy_key in ("replace_space", "replace")
-                    or stem_counts[stem_key] > 1
-                    or disk_collision
-                    or raw_target.lower() in seen
-            )
+            has_conflict = False
 
-            if has_conflict:
+            # Check for stem-level conflict across all extensions
+            if stem_counts[stem_key] > 1 or disk_collision or raw_target.lower() in seen:
                 # Retrieve the next counter position for this stem group
                 counter = dir_counters.get(stem_key, start_num)
                 num_conflicts = stem_counts.get(stem_key, 1)
@@ -94,10 +89,16 @@ class RegexProcessor(BaseProcessor):
                     candidate = f"{stem}{suffix}{ext}"
                     cand_abs = os.path.abspath(os.path.join(dirname, candidate))
 
-                    if candidate.lower() not in seen and not (
-                            os.path.exists(cand_abs) and cand_abs not in input_paths_abs):
+                    # Check if candidate collides with an external file on disk
+                    is_cand_on_disk = os.path.exists(cand_abs) and cand_abs not in input_paths_abs
+                    if is_cand_on_disk:
+                        has_conflict = True
+
+                    # Available if not seen in batch and not colliding with external disk file
+                    if candidate.lower() not in seen and not is_cand_on_disk:
                         dir_counters[stem_key] = counter + 1
                         break
+
                     counter += 1
             else:
                 candidate = raw_target
@@ -115,7 +116,8 @@ class RegexProcessor(BaseProcessor):
                 "target_name": candidate,
                 "output_preview": output_preview,
                 "action": "rename",
-                "display_name": output_preview
+                "display_name": output_preview,
+                "has_conflict": has_conflict,
             }
 
         return planned

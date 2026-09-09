@@ -300,6 +300,14 @@ Window {
                                     Text {
                                         Layout.alignment: Qt.AlignHCenter
                                         visible: !dropArea.containsDrag && fileList.count === 0
+                                        text: "or copy and paste file paths"
+                                        font.pixelSize: 11
+                                        color: Theme.defaultFont
+                                    }
+
+                                    Text {
+                                        Layout.alignment: Qt.AlignHCenter
+                                        visible: !dropArea.containsDrag && fileList.count === 0
                                         text: "or click anywhere to browse"
                                         font.pixelSize: 11
                                         color: Theme.defaultFont
@@ -312,6 +320,7 @@ Window {
                                 isInput: true
                                 isEven: model.isEven
                                 isSelected: model.isSelected
+                                hasConflict: model.hasConflict ?? false
 
                                 onItemClicked: (mouse) => {
                                     fileList.forceActiveFocus()
@@ -519,6 +528,7 @@ Window {
                                 isInput: false
                                 isEven: model.isEven
                                 isSelected: false
+                                hasConflict: model.hasConflict ?? false
                             }
 
                             ScrollBar.vertical: ScrollBar {}

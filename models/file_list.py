@@ -5,6 +5,7 @@ class FileListModel(QAbstractListModel):
     FileNameRole = Qt.UserRole + 1
     IsSelectedRole = Qt.UserRole + 2
     IsEvenRole = Qt.UserRole + 3
+    HasConflictRole = Qt.UserRole + 4
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -19,12 +20,17 @@ class FileListModel(QAbstractListModel):
             return None
 
         row = index.row()
+        item = self._items[row]
+        is_dict = isinstance(item, dict)
+
         if role == Qt.DisplayRole or role == self.FileNameRole:
-            return self._items[row]
+            return item.get("display_name") if is_dict else str(item)
         elif role == self.IsSelectedRole:
             return row in self._selected_indices
         elif role == self.IsEvenRole:
             return row % 2 == 1
+        elif role == self.HasConflictRole:
+            return item.get("has_conflict", False) if is_dict else False
         return None
 
     def roleNames(self):
@@ -32,7 +38,8 @@ class FileListModel(QAbstractListModel):
             Qt.DisplayRole: b"fileName",
             self.FileNameRole: b"fileName",
             self.IsSelectedRole: b"isSelected",
-            self.IsEvenRole: b"isEven"
+            self.IsEvenRole: b"isEven",
+            self.HasConflictRole: b"hasConflict"
         }
 
     def set_items(self, new_items):

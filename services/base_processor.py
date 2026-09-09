@@ -41,11 +41,10 @@ class BaseProcessor(ABC):
         """
         pass
 
-    def preview(self, files: list[str], **kwargs) -> list[str]:
-        """Unified UI preview generator. Returns target display names matching input order."""
+    def preview(self, files: list[str], **kwargs) -> list[dict]:
+        """Unified UI preview generator. Returns target item dictionaries matching input order."""
         items = self.generate_previews(files, **kwargs)
-        sorted_items = sorted(items, key=lambda x: x.get("original_index", 0))
-        return [item["display_name"] for item in sorted_items]
+        return sorted(items, key=lambda x: x.get("original_index", 0))
 
     def process(
             self,

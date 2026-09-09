@@ -173,13 +173,11 @@ class FileModel(QObject):
     @Slot(dict)
     def _on_add_files_completed(self, result: dict):
         new_unique_paths = result["new_unique_paths"]
-        new_previews = result["new_previews"]
 
         if new_unique_paths:
             self._raw_input_paths.extend(new_unique_paths)
-            formatted_inputs = [format_parent_path(p) for p in new_unique_paths]
-            self._input_model.add_items(formatted_inputs)
-            self._output_model.add_items(new_previews)
+            self._input_model.set_items([format_parent_path(p) for p in self._raw_input_paths])
+            self._update_previews()
             self.filesChanged.emit()
 
     @Slot()
@@ -331,7 +329,7 @@ class FileModel(QObject):
             self._input_model.set_selected_indices(self._selected_indices)
             self.selectedIndicesChanged.emit()
 
-    @Property("QStringList", notify=previewFilesChanged)
+    @Property("QVariantList", notify=previewFilesChanged)
     def previewFiles(self):
         return self._output_model.items
 

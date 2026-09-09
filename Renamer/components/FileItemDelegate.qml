@@ -12,6 +12,7 @@ ItemDelegate {
     property bool isInput: true
     property bool isSelected: false
     property bool isEven: false
+    property bool hasConflict: false
     property bool isDeleted: fileText.startsWith("[DELETE]")
 
     signal itemClicked(var mouse)
@@ -21,7 +22,8 @@ ItemDelegate {
         color: {
             if (root.isSelected) return Theme.brandPrimary
             if (root.hovered) return Theme.hoverBackground
-            return root.isEven ? Theme.rowEven : Theme.rowOdd
+            if (root.isEven) return Theme.rowEven
+            return Theme.rowOdd
         }
     }
 
@@ -37,14 +39,31 @@ ItemDelegate {
             Layout.preferredHeight: 18
             visible: root.isDeleted
             radius: 3
-            color: root.isSelected ? Qt.rgba(1, 1, 1, 0.25) : "#fde8e8"
+            color: root.isSelected ? Qt.rgba(1, 1, 1, 0.25) : "#FFEBEE"
 
             Text {
                 anchors.centerIn: parent
-                text: "DEL"
+                text: "TO DELETE"
                 font.pixelSize: 9
                 font.bold: true
-                color: root.isSelected ? Theme.brandFont : "#ef4444"
+                color: root.isSelected ? Theme.brandFont : "#E53935"
+            }
+        }
+
+        // CONFLICT Badge Indicator
+        Rectangle {
+            Layout.preferredWidth: 60
+            Layout.preferredHeight: 18
+            visible: root.hasConflict
+            radius: 3
+            color: root.isSelected ? Qt.rgba(1, 1, 1, 0.25) : "#FFF3E0"
+
+            Text {
+                anchors.centerIn: parent
+                text: "CONFLICT"
+                font.pixelSize: 9
+                font.bold: true
+                color: root.isSelected ? Theme.brandFont : "#E65100"
             }
         }
 
@@ -54,9 +73,7 @@ ItemDelegate {
             text: root.fileText
             font.pixelSize: 12
             font.strikeout: root.isDeleted
-            color: root.isSelected
-                   ? Theme.brandFont
-                   : (root.isDeleted ? "#737373" : Theme.defaultFont)
+            color: root.isSelected ? Theme.brandFont : Theme.defaultFont
             elide: Text.ElideMiddle
             verticalAlignment: Text.AlignVCenter
         }

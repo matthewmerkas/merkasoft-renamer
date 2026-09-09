@@ -126,7 +126,8 @@ class PhotoProcessor(BaseProcessor):
                     "input_preview": input_preview,
                     "output_preview": f"[DELETE] {filename} (Live Photo)",
                     "action": "delete",
-                    "display_name": f"[DELETE] {input_preview} (Live Photo)"
+                    "display_name": f"[DELETE] {input_preview} (Live Photo)",
+                    "has_conflict": False
                 })
                 continue
 
@@ -174,7 +175,8 @@ class PhotoProcessor(BaseProcessor):
                 "target_name": target_name,
                 "output_preview": output_preview,
                 "action": action,
-                "display_name": output_preview
+                "display_name": output_preview,
+                "has_conflict": counter_sub > 1
             })
 
         return planned_items
