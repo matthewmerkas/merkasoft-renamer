@@ -55,10 +55,10 @@ class FileModel(QObject):
         self._addFilesCompleted.connect(self._on_add_files_completed)
 
         self._strategies = [
-            {"id": "date", "label": "Date"},
-            {"id": "sequential", "label": "Sequential"},
-            {"id": "replace_space", "label": "Replace ( )"},
+            {"id": "replace_space", "label": "Replace"},
             {"id": "replace_underscore", "label": "Replace (_)"},
+            {"id": "date", "label": "Date"},
+            {"id": "sequential", "label": "Date (Seq.)"},
         ]
         self._current_strategy = self._strategies[0]["id"]
 
