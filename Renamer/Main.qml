@@ -14,6 +14,15 @@ Window {
     title: "Merkasoft Renamer v1.1.0"
     color: Theme.defaultBackground
 
+    // Clears focus from any active input when clicking empty space
+    Item {
+        id: bgFocusTarget
+        anchors.fill: parent
+    }
+    TapHandler {
+        onTapped: bgFocusTarget.forceActiveFocus()
+    }
+
     FileDialog {
         id: fileDialog
         title: "Select files"
@@ -74,18 +83,21 @@ Window {
 
                     Button {
                         text: "+ Add"
+                        focusPolicy: Qt.ClickFocus
                         onClicked: fileDialog.open()
                     }
 
                     Button {
                         text: "- Remove"
                         enabled: fileList.count > 0 && fileModel.selectedIndices.length > 0
+                        focusPolicy: Qt.ClickFocus
                         onClicked: fileModel.deleteSelected()
                     }
 
                     Button {
                         text: "✕ Remove All"
                         enabled: fileModel.files.length > 0
+                        focusPolicy: Qt.ClickFocus
                         onClicked: fileModel.clearFiles()
                     }
                 }
@@ -291,7 +303,7 @@ Window {
                                         visible: !dropArea.containsDrag
                                         text: fileList.count === 0
                                               ? "+ Drag & Drop files here"
-                                              : "+ Drag & Drop or click to add more"
+                                              : "+ Drag & Drop, copy/paste, or click to add more"
                                         font.pixelSize: 13
                                         font.bold: fileList.count === 0
                                         color: Theme.boldFont
@@ -515,6 +527,10 @@ Window {
                             model: fileModel.outputListModel
                             clip: true
 
+                            TapHandler {
+                                onTapped: outputList.forceActiveFocus()
+                            }
+
                             property int lastCount: 0
                             onCountChanged: {
                                 if (count > lastCount) {
@@ -587,6 +603,7 @@ Window {
                 id: actionButton
                 text: fileModel.isProcessing ? "Cancel" : "Process Files"
                 enabled: fileModel.isProcessing || fileList.count > 0
+                focusPolicy: Qt.ClickFocus
                 onClicked: {
                     if (fileModel.isProcessing) {
                         fileModel.cancelProcessing()

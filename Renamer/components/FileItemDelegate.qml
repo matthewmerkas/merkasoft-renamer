@@ -81,6 +81,9 @@ ItemDelegate {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: (mouse) => root.itemClicked(mouse)
+        onClicked: (mouse) => {
+            root.forceActiveFocus()
+            root.itemClicked(mouse)
+        }
     }
 }
