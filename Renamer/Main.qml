@@ -303,7 +303,7 @@ Window {
                                         visible: !dropArea.containsDrag
                                         text: fileList.count === 0
                                               ? "+ Drag & Drop files here"
-                                              : "+ Drag & Drop, copy/paste, or click to add more"
+                                              : "+ Drag & Drop, copy & paste, or click to add more"
                                         font.pixelSize: 13
                                         font.bold: fileList.count === 0
                                         color: Theme.boldFont
