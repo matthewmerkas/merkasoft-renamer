@@ -415,6 +415,7 @@ Window {
                                 value: 1
                                 editable: true
                                 onValueChanged: fileModel.setStartNumber(value)
+                                textFromValue: function(value, locale) { return value.toString() }
                             }
 
                             Text {
@@ -448,6 +449,7 @@ Window {
                                 value: 1
                                 editable: true
                                 onValueChanged: fileModel.setStartNumber(value)
+                                textFromValue: function(value, locale) { return value.toString() }
                             }
 
                             Text {
@@ -478,9 +480,10 @@ Window {
                             SpinBox {
                                 from: 1
                                 to: 9999
-                                value: 1
+                                value: 1000
                                 editable: true
                                 onValueChanged: fileModel.setStartNumber(value)
+                                textFromValue: function(value, locale) { return value.toString() }
                             }
 
                             TextField {
