@@ -120,13 +120,6 @@ class FileModel(QObject):
     selectedIndices = Property("QVariantList", getSelectedIndices, notify=selectedIndicesChanged)
     strategies = Property("QVariantList", getStrategies, constant=True)
 
-    def _reset_progress(self):
-        """Resets progress bar and status message to default state."""
-        self._progress_value = 0.0
-        self._status_message = ""
-        self.progressValueChanged.emit()
-        self.statusMessageChanged.emit()
-
     def _update_previews(self):
         """Generates new preview names via backend dispatcher."""
         files = self._raw_input_paths
@@ -152,7 +145,7 @@ class FileModel(QObject):
     @Slot(str)
     def addFile(self, url):
         self.addFiles([url])
-        self._reset_progress()
+        self.resetProgress()
 
     @Slot(list)
     @Slot(str)
@@ -179,6 +172,7 @@ class FileModel(QObject):
             self._input_model.set_items([format_parent_path(p) for p in self._raw_input_paths])
             self._update_previews()
             self.filesChanged.emit()
+            self.resetProgress()
 
     @Slot()
     def pasteFromClipboard(self):
@@ -227,12 +221,9 @@ class FileModel(QObject):
 
         # 4. Refresh output preview list
         self._update_previews()
-
-        # 5. Clear progress bar and status message
-        self._reset_progress()
-
         self.filesChanged.emit()
         self.selectedIndicesChanged.emit()
+        self.resetProgress()
 
     @Slot()
     def clearFiles(self):
@@ -243,27 +234,28 @@ class FileModel(QObject):
         self._anchor_index = -1
         self._input_model.set_selected_indices(self._selected_indices)
 
-        # Reset progress and status on clear
-        self._reset_progress()
-
         self.filesChanged.emit()
         self.selectedIndicesChanged.emit()
         self.previewFilesChanged.emit()
+        self.resetProgress()
 
     @Slot(str)
     def setStrategyKey(self, key):
         self._current_strategy = key
         self._update_previews()
+        self.resetProgress()
 
     @Slot(int)
     def setStartNumber(self, val):
         self._start_num = val
         self._update_previews()
+        self.resetProgress()
 
     @Slot(str)
     def setUtcOffset(self, text):
         self._utc_offset_str = text
         self._update_previews()
+        self.resetProgress()
 
     @Slot(str)
     def setSearchPattern(self, text):
@@ -271,6 +263,7 @@ class FileModel(QObject):
             self._search_pattern = text
             self.searchPatternChanged.emit()
             self._update_previews()
+            self.resetProgress()
 
     @Slot(str)
     def setReplacePattern(self, text):
@@ -278,6 +271,7 @@ class FileModel(QObject):
             self._replace_pattern = text
             self.replacePatternChanged.emit()
             self._update_previews()
+            self.resetProgress()
 
     @Slot(bool)
     def setUseRegex(self, enabled):
@@ -285,6 +279,7 @@ class FileModel(QObject):
             self._use_regex = enabled
             self.useRegexChanged.emit()
             self._update_previews()
+            self.resetProgress()
 
     @Slot(int, bool, bool)
     def handleSelection(self, index, is_ctrl, is_shift):
@@ -363,6 +358,14 @@ class FileModel(QObject):
         self._worker_thread.error.connect(self._on_worker_error)
 
         self._worker_thread.start()
+
+    @Slot()
+    def resetProgress(self):
+        """Resets progress bar and status message to default state."""
+        self._progress_value = 0.0
+        self._status_message = ""
+        self.progressValueChanged.emit()
+        self.statusMessageChanged.emit()
 
     @Slot(int, int, str)
     def _on_worker_progress(self, current, total, msg):
